@@ -13,22 +13,21 @@ fi
 # 检查配置文件
 CONFIG_FILE="$PROJECT_ROOT/config/config.yaml"
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "错误: 配置文件不存在: $CONFIG_FILE"
+    echo "错误: 配置文件不存在 ($CONFIG_FILE)"
     exit 1
 fi
 
-# 检查日志目录
+# 确保日志目录存在
 LOG_DIR="/var/log/symlink"
 if [ ! -d "$LOG_DIR" ]; then
     echo "创建日志目录: $LOG_DIR"
-    sudo mkdir -p "$LOG_DIR"
-    sudo chmod 755 "$LOG_DIR"
+    mkdir -p "$LOG_DIR"
 fi
 
 # 设置 PYTHONPATH
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
-# 启动程序
-echo "启动软链接管理系统..."
+# 启动主程序
+echo "启动系统..."
 cd "$PROJECT_ROOT"
-python3 src/main.py 
+python3 src/gui.py 

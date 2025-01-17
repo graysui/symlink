@@ -11,7 +11,7 @@
 import os
 import time
 import logging
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Generator
 from pathlib import Path
 from threading import Lock
 
@@ -128,7 +128,7 @@ class Initializer:
             logger.error(f"扫描目录树失败: {e}")
             raise
     
-    def _walk_directory(self, directory: str) -> List[Dict]:
+    def _walk_directory(self, directory: str) -> Generator[Dict, None, None]:
         """遍历目录树
         
         Args:

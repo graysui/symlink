@@ -5,7 +5,7 @@ Google Drive API 监控模块
 1. 获取文件活动数据
 2. 解析文件变化信息
 3. 更新数据库记录
-4. 通知软链接模块
+4. 通知任务队列
 """
 
 import os
@@ -25,7 +25,7 @@ from googleapiclient.errors import HttpError
 
 from .config_manager import config_manager
 from .db_manager import DatabaseManager
-from .symlink_manager import SymlinkManager
+from .task_queue import TaskQueue
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class GoogleDriveAPI:
         
         # 初始化组件
         self.db = DatabaseManager()
-        self.symlink_mgr = SymlinkManager()
+        self.task_queue = TaskQueue()
         
         # 初始化认证
         self.credentials = self._get_credentials()
@@ -200,9 +200,15 @@ class GoogleDriveAPI:
             )
             
             if is_new:
-                # 通知软链接模块
-                self.symlink_mgr.process_file(path)
-                logger.info(f"处理文件变化: {path}")
+                # 添加到任务队列
+                from .symlink_manager import SymlinkManager
+                symlink_mgr = SymlinkManager()
+                self.task_queue.add_task(
+                    symlink_mgr.process_file,
+                    path,
+                    priority=3  # Google Drive 变化优先级中等
+                )
+                logger.info(f"添加处理任务: {path}")
             
         except Exception as e:
             logger.error(f"处理文件活动失败: {e}")

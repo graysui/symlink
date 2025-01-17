@@ -20,7 +20,7 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
 from .config_manager import config_manager
 from .db_manager import DatabaseManager
-from .symlink_manager import SymlinkManager
+from .task_queue import TaskQueue
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class LocalMonitor:
         
         # 初始化组件
         self.db = DatabaseManager()
-        self.symlink_mgr = SymlinkManager()
+        self.task_queue = TaskQueue()
         
         # 初始化事件队列和处理线程
         self.event_queue = Queue()
@@ -189,9 +189,15 @@ class LocalMonitor:
                         )
                         
                         if is_new:
-                            # 通知软链接模块
-                            self.symlink_mgr.process_file(path)
-                            logger.info(f"处理文件变化: {event_type} {path}")
+                            # 添加到任务队列
+                            from .symlink_manager import SymlinkManager
+                            symlink_mgr = SymlinkManager()
+                            self.task_queue.add_task(
+                                symlink_mgr.process_file,
+                                path,
+                                priority=1 if event_type == 'created' else 2
+                            )
+                            logger.info(f"添加处理任务: {event_type} {path}")
                             
                     except FileNotFoundError:
                         logger.warning(f"文件不存在: {path}")
@@ -264,9 +270,15 @@ class LocalMonitor:
                         )
                         
                         if is_new:
-                            # 通知软链接模块
-                            self.symlink_mgr.process_file(path)
-                            logger.info(f"发现文件变化: {path}")
+                            # 添加到任务队列
+                            from .symlink_manager import SymlinkManager
+                            symlink_mgr = SymlinkManager()
+                            self.task_queue.add_task(
+                                symlink_mgr.process_file,
+                                path,
+                                priority=1  # 轮询发现的变化优先级较低
+                            )
+                            logger.info(f"添加处理任务: {path}")
                         
                     except FileNotFoundError:
                         logger.warning(f"文件不存在: {path}")
