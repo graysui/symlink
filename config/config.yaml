@@ -8,7 +8,7 @@ google_drive:
 
 # 本地目录监控配置
 local_monitor:
-  mount_point: "/media/mount"  # rclone 挂载点路径
+  mount_point: "/mnt/9w"  # rclone 挂载点路径
   polling_interval: 300  # 轮询间隔（秒）
   watch_patterns: ["*"]  # 监控的文件模式
   ignore_patterns: [".git/*", "*.tmp"]  # 忽略的文件模式
