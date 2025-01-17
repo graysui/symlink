@@ -1,37 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# 第一阶段：构建依赖
-FROM --platform=$BUILDPLATFORM python:3.11-slim as builder
-
-# 设置构建参数
-ARG BUILDPLATFORM
-ARG TARGETPLATFORM
-ARG VERSION
-ARG BUILD_DATE
-ARG GIT_COMMIT
-
-# 设置构建时的环境变量
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# 设置工作目录
-WORKDIR /build
-
-# 安装构建依赖
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# 复制依赖文件
-COPY requirements.txt .
-
-# 安装依赖到指定目录
-RUN pip install --no-cache-dir -r requirements.txt --target=/install
-
-# 第二阶段：运行环境
 FROM --platform=$TARGETPLATFORM python:3.11-slim
 
 # 添加元数据标签
@@ -53,28 +21,28 @@ ENV PYTHONUNBUFFERED=1 \
     LOG_PATH=/var/log/symlink \
     DATABASE_PATH=/app/data/database.db \
     TZ=Asia/Shanghai \
-    PYTHONPATH=/app:/usr/local/lib/python3.11/site-packages
+    PYTHONPATH=/app
 
-# 安装运行时依赖
+# 安装系统依赖
 RUN apt-get update && apt-get install -y \
-    libfuse2 \
-    fuse \
+    fuse3 \
+    libfuse3-dev \
     tzdata \
     curl \
+    gcc \
+    python3-dev \
     && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -r symlink \
     && useradd -r -g symlink -m -s /bin/bash symlink
 
-# 从构建阶段复制 Python 包
-COPY --from=builder /install /usr/local/lib/python3.11/site-packages
-
 # 复制项目文件
-COPY --chown=symlink:symlink src/ src/
-COPY --chown=symlink:symlink config/config.yaml.example config/
-COPY --chown=symlink:symlink scripts/ scripts/
-COPY --chown=symlink:symlink templates/ templates/
+COPY --chown=symlink:symlink . /app/
+
+# 安装 Python 依赖
+RUN pip install --no-cache-dir -r requirements.txt && \
+    chown -R symlink:symlink /app/
 
 # 创建必要的目录并设置权限
 RUN mkdir -p /var/log/symlink /app/data /app/config && \
