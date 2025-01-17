@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   symlink:
-    build: .
+    image: gray777/symlink:latest  # 使用 DockerHub 镜像
     container_name: symlink
     volumes:
       # 配置文件
@@ -15,17 +15,27 @@ services:
       - ${TARGET_BASE:-/media/links}:/media/links
       # 日志目录
       - ${LOG_PATH:-/var/log/symlink}:/var/log/symlink
+      # rclone 配置
+      - ${RCLONE_CONFIG:-~/.config/rclone}:/home/symlink/.config/rclone:ro
     environment:
       - MOUNT_POINT=/media/mount
       - TARGET_BASE=/media/links
       - LOG_PATH=/var/log/symlink
       - DATABASE_PATH=/app/data/database.db
+      - CONFIG_PATH=/app/config/config.yaml
       - TZ=Asia/Shanghai
+      - PYTHONPATH=/app
     ports:
       - "8501:8501"  # Streamlit Web UI
       - "8000:8000"  # FastAPI
     restart: unless-stopped
     privileged: true  # 需要特权模式以支持软链接操作
+    cap_add:
+      - SYS_ADMIN  # 需要此权限来支持 FUSE
+    devices:
+      - /dev/fuse:/dev/fuse  # 需要访问 FUSE 设备
+    security_opt:
+      - apparmor:unconfined  # 某些系统可能需要此选项来支持 FUSE
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -39,6 +49,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    sysctls:
+      - net.core.somaxconn=1024
 
 networks:
   symlink_net:

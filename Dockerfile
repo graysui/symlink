@@ -28,8 +28,8 @@ RUN apt-get update && apt-get install -y \
 # 复制依赖文件
 COPY requirements.txt .
 
-# 安装依赖到指定目录
-RUN pip install --no-cache-dir -r requirements.txt -t /python-packages
+# 安装依赖
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 第二阶段：运行环境
 FROM --platform=$TARGETPLATFORM python:3.11-slim
@@ -52,7 +52,8 @@ ENV PYTHONUNBUFFERED=1 \
     CONFIG_PATH=/app/config/config.yaml \
     LOG_PATH=/var/log/symlink \
     DATABASE_PATH=/app/data/database.db \
-    TZ=Asia/Shanghai
+    TZ=Asia/Shanghai \
+    PYTHONPATH=/app
 
 # 安装运行时依赖
 RUN apt-get update && apt-get install -y \
@@ -64,20 +65,20 @@ RUN apt-get update && apt-get install -y \
     && echo ${TZ} > /etc/timezone \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -r symlink \
-    && useradd -r -g symlink -s /sbin/nologin symlink
+    && useradd -r -g symlink -m -s /bin/bash symlink
 
 # 从构建阶段复制 Python 包
-COPY --from=builder /python-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
 # 复制项目文件
 COPY --chown=symlink:symlink src/ src/
-COPY --chown=symlink:symlink config/ config/
+COPY --chown=symlink:symlink config/config.yaml.example config/
 COPY --chown=symlink:symlink scripts/ scripts/
 COPY --chown=symlink:symlink templates/ templates/
 
 # 创建必要的目录并设置权限
-RUN mkdir -p /var/log/symlink /app/data && \
-    chown -R symlink:symlink /var/log/symlink /app/data && \
+RUN mkdir -p /var/log/symlink /app/data /app/config && \
+    chown -R symlink:symlink /var/log/symlink /app/data /app/config && \
     chmod 755 /var/log/symlink && \
     chmod +x scripts/docker-entrypoint.sh
 
