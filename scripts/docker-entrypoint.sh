@@ -6,6 +6,21 @@ echo "系统架构: $(uname -m)"
 echo "Python 版本: $(python3 --version)"
 echo "Python 路径: $(which python3)"
 echo "Site packages 路径: $(python3 -c 'import site; print(site.getsitepackages()[0])')"
+echo "当前用户: $(whoami)"
+echo "PATH: $PATH"
+echo "PYTHONPATH: $PYTHONPATH"
+
+# 检查 uvicorn 是否可用
+echo "检查 uvicorn 安装..."
+if python3 -c "import uvicorn" 2>/dev/null; then
+    echo "uvicorn 已安装"
+    python3 -c "import uvicorn; print('uvicorn 版本:', uvicorn.__version__)"
+    echo "uvicorn 路径: $(python3 -c 'import uvicorn; print(uvicorn.__file__)')"
+else
+    echo "错误: uvicorn 未安装或无法导入"
+    pip list | grep uvicorn || echo "未找到 uvicorn 包"
+    exit 1
+fi
 
 # 检查并创建配置文件
 if [ ! -f "${CONFIG_PATH}" ]; then
@@ -45,13 +60,16 @@ mkdir -p "${LOG_PATH}"
 mkdir -p "$(dirname ${DATABASE_PATH})"
 mkdir -p "$(dirname ${CONFIG_PATH})"
 
-# 检查 Python 包是否正确安装
-echo "检查必要的 Python 包..."
-python3 -c "import uvicorn; import streamlit; print('uvicorn 版本:', uvicorn.__version__); print('streamlit 版本:', streamlit.__version__)"
-
 # 启动 FastAPI 服务
 echo "启动 FastAPI 服务..."
-cd /app && /usr/local/bin/python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
+echo "尝试直接运行 uvicorn..."
+if command -v uvicorn >/dev/null 2>&1; then
+    echo "使用系统 uvicorn"
+    cd /app && uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
+else
+    echo "使用 Python 模块方式运行 uvicorn"
+    cd /app && python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
+fi
 
 # 等待 FastAPI 服务就绪
 echo "等待 FastAPI 服务就绪..."
@@ -61,7 +79,7 @@ done
 
 # 启动 Streamlit 界面
 echo "启动 Streamlit 界面..."
-cd /app && /usr/local/bin/python -m streamlit run src/gui.py --server.port 8501 --server.address 0.0.0.0
+cd /app && python3 -m streamlit run src/gui.py --server.port 8501 --server.address 0.0.0.0
 
 # 捕获信号并优雅退出
 trap 'kill $(jobs -p)' SIGINT SIGTERM
