@@ -20,14 +20,14 @@ from fastapi import FastAPI, HTTPException
 import uvicorn
 from pydantic import BaseModel
 
-from core.config_manager import config_manager
-from core.log_manager import LogManager
-from core.local_monitor import LocalMonitor
-from core.gdrive_api import GoogleDriveAPI
-from core.health_checker import HealthChecker
-from core.initializer import Initializer
-from core.symlink_manager import SymlinkManager
-from core.emby_notifier import EmbyNotifier
+from src.core.config_manager import config_manager
+from src.core.log_manager import LogManager
+from src.core.local_monitor import LocalMonitor
+from src.core.gdrive_api import GoogleDriveAPI
+from src.core.health_checker import HealthChecker
+from src.core.initializer import Initializer
+from src.core.symlink_manager import SymlinkManager
+from src.core.emby_notifier import EmbyNotifier
 
 # 创建 FastAPI 应用
 app = FastAPI(title="Symlink Manager API")

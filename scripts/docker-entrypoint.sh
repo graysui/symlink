@@ -63,13 +63,7 @@ mkdir -p "$(dirname ${CONFIG_PATH})"
 # 启动 FastAPI 服务
 echo "启动 FastAPI 服务..."
 echo "尝试直接运行 uvicorn..."
-if command -v uvicorn >/dev/null 2>&1; then
-    echo "使用系统 uvicorn"
-    cd /app && uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
-else
-    echo "使用 Python 模块方式运行 uvicorn"
-    cd /app && python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
-fi
+cd /app && PYTHONPATH=/app python3 -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
 
 # 等待 FastAPI 服务就绪
 echo "等待 FastAPI 服务就绪..."
@@ -79,7 +73,7 @@ done
 
 # 启动 Streamlit 界面
 echo "启动 Streamlit 界面..."
-cd /app && python3 -m streamlit run src/gui.py --server.port 8501 --server.address 0.0.0.0
+cd /app && PYTHONPATH=/app python3 -m streamlit run src/gui.py --server.port 8501 --server.address 0.0.0.0
 
 # 捕获信号并优雅退出
 trap 'kill $(jobs -p)' SIGINT SIGTERM
