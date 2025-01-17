@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# 输出系统信息
+echo "系统架构: $(uname -m)"
+echo "Python 版本: $(python3 --version)"
+echo "Python 路径: $(which python3)"
+echo "Site packages 路径: $(python3 -c 'import site; print(site.getsitepackages()[0])')"
+
 # 检查并创建配置文件
 if [ ! -f "${CONFIG_PATH}" ]; then
     echo "配置文件不存在，从示例配置创建..."
@@ -39,9 +45,13 @@ mkdir -p "${LOG_PATH}"
 mkdir -p "$(dirname ${DATABASE_PATH})"
 mkdir -p "$(dirname ${CONFIG_PATH})"
 
+# 检查 Python 包是否正确安装
+echo "检查必要的 Python 包..."
+python3 -c "import uvicorn; import streamlit; print('uvicorn 版本:', uvicorn.__version__); print('streamlit 版本:', streamlit.__version__)"
+
 # 启动 FastAPI 服务
 echo "启动 FastAPI 服务..."
-cd /app && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
+cd /app && /usr/local/bin/python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4 &
 
 # 等待 FastAPI 服务就绪
 echo "等待 FastAPI 服务就绪..."
@@ -51,7 +61,7 @@ done
 
 # 启动 Streamlit 界面
 echo "启动 Streamlit 界面..."
-cd /app && python -m streamlit run src/gui.py --server.port 8501 --server.address 0.0.0.0
+cd /app && /usr/local/bin/python -m streamlit run src/gui.py --server.port 8501 --server.address 0.0.0.0
 
 # 捕获信号并优雅退出
 trap 'kill $(jobs -p)' SIGINT SIGTERM
