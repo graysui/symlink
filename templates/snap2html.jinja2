@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: #666;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .tree-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .directory {
+            margin-left: 20px;
+        }
+        
+        .directory-name {
+            cursor: pointer;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .directory-name:hover {
+            color: #3498db;
+        }
+        
+        .file {
+            margin-left: 40px;
+            color: #34495e;
+        }
+        
+        .file-info {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ title }}</h1>
+        <div class="stats">
+            <span>生成时间: {{ generated_time }}</span>
+            <span>目录数: {{ total_dirs }}</span>
+            <span>文件数: {{ total_files }}</span>
+            <span>总大小: {{ total_size }}</span>
+        </div>
+        <input type="text" class="search-box" placeholder="搜索文件或目录..." id="searchBox">
+    </div>
+    
+    <div class="tree-container" id="tree"></div>
+
+    <script>
+        // 目录树数据
+        const treeData = {{ directory_tree|safe }};
+        
+        // 渲染目录树
+        function renderTree(node, container) {
+            if (node.type === 'directory') {
+                const dirDiv = document.createElement('div');
+                dirDiv.className = 'directory';
+                
+                const dirName = document.createElement('div');
+                dirName.className = 'directory-name';
+                dirName.textContent = '📁 ' + node.name;
+                dirName.onclick = () => {
+                    const content = dirDiv.querySelector('.directory-content');
+                    content.classList.toggle('hidden');
+                };
+                
+                const dirContent = document.createElement('div');
+                dirContent.className = 'directory-content';
+                
+                // 渲染子目录
+                Object.values(node.children).forEach(child => {
+                    renderTree(child, dirContent);
+                });
+                
+                // 渲染文件
+                node.files.forEach(file => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'file';
+                    fileDiv.innerHTML = `📄 ${file.name} <span class="file-info">${file.size} | ${file.modified_time}</span>`;
+                    dirContent.appendChild(fileDiv);
+                });
+                
+                dirDiv.appendChild(dirName);
+                dirDiv.appendChild(dirContent);
+                container.appendChild(dirDiv);
+            }
+        }
+        
+        // 搜索功能
+        function searchTree(query) {
+            const elements = document.querySelectorAll('.directory, .file');
+            if (!query) {
+                elements.forEach(el => el.style.display = '');
+                return;
+            }
+            
+            query = query.toLowerCase();
+            elements.forEach(el => {
+                const text = el.textContent.toLowerCase();
+                const isMatch = text.includes(query);
+                el.style.display = isMatch ? '' : 'none';
+                
+                // 如果是目录，确保匹配的文件可见
+                if (el.classList.contains('directory') && isMatch) {
+                    const content = el.querySelector('.directory-content');
+                    if (content) {
+                        content.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+        
+        // 初始化
+        window.onload = () => {
+            const treeContainer = document.getElementById('tree');
+            renderTree(treeData, treeContainer);
+            
+            const searchBox = document.getElementById('searchBox');
+            searchBox.addEventListener('input', (e) => {
+                searchTree(e.target.value);
+            });
+        };
+    </script>
+</body>
+</html> 

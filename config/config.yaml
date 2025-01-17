@@ -1,0 +1,81 @@
+# Google Drive 监控配置
+google_drive:
+  folder_id: ""  # Google Drive 监控的文件夹 ID
+  api_key: ""    # Google Drive API 密钥
+  api_call_interval: 3600  # API 调用间隔（秒）
+  credentials_path: "config/credentials.json"  # OAuth 凭证文件路径
+  token_path: "config/token.json"  # OAuth token 文件路径
+
+# 本地目录监控配置
+local_monitor:
+  mount_point: "/media/mount"  # rclone 挂载点路径
+  polling_interval: 300  # 轮询间隔（秒）
+  watch_patterns: ["*"]  # 监控的文件模式
+  ignore_patterns: [".git/*", "*.tmp"]  # 忽略的文件模式
+
+# 软链接配置
+symlink:
+  target_base: "/media/links"  # 软链接目标基础路径
+  overwrite_existing: false  # 是否覆盖已存在的软链接
+  video_extensions:  # 支持的视频文件扩展名
+    - .mp4
+    - .mkv
+    - .ts
+    - .iso
+    - .rmvb
+    - .avi
+    - .mov
+    - .mpeg
+    - .mpg
+    - .wmv
+    - .3gp
+    - .asf
+    - .m4v
+    - .flv
+    - .m2ts
+    - .strm
+    - .tp
+    - .f4v
+
+# Emby 配置
+emby:
+  server_url: "http://localhost:8096"  # Emby 服务器地址
+  api_key: ""  # Emby API 密钥
+  retry_count: 3  # 重试次数
+  retry_interval: 5  # 重试间隔（秒）
+
+# 数据库配置
+database:
+  path: "config/database.db"  # 数据库文件路径
+  backup_count: 5  # 保留的备份数量
+  backup_interval: 86400  # 备份间隔（秒）
+  vacuum_threshold: 104857600  # 触发数据库整理的大小阈值（字节，默认100MB）
+
+# 日志配置
+logging:
+  path: "/var/log/symlink"  # 日志目录
+  level: "INFO"  # 日志级别：DEBUG, INFO, WARNING, ERROR
+  max_size: 10485760  # 单个日志文件最大大小（字节，默认10MB）
+  backup_count: 5  # 保留的日志文件数量
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # 日志格式
+
+# 快照配置
+snapshot:
+  template_dir: "templates"  # 模板目录
+  output_dir: "snapshots"  # 输出目录
+  max_snapshots: 10  # 保留的快照数量
+
+# 健康检查配置
+health_check:
+  interval: 300  # 检查间隔（秒）
+  timeout: 30  # 检查超时时间（秒）
+  disk_usage_threshold: 90  # 磁盘使用率警告阈值（百分比）
+  memory_usage_threshold: 90  # 内存使用率警告阈值（百分比）
+  cpu_usage_threshold: 90  # CPU使用率警告阈值（百分比）
+
+# 任务队列配置
+task_queue:
+  max_workers: 4  # 最大工作线程数
+  max_retries: 3  # 最大重试次数
+  retry_delay: 5  # 重试延迟（秒）
+  batch_size: 100  # 批处理大小 

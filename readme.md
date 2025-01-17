@@ -27,6 +27,26 @@ Symlink 是一个用于监控文件变化并生成软链接的系统，支持通
 7. **图形操作界面 (`gui.py`)**  
    - 使用 Streamlit 构建图形操作界面，支持监控状态显示、配置管理、文件浏览和快照查看。
 
+8. **配置管理 (`config_manager.py`)**
+   - 统一管理所有配置项，支持 YAML 格式配置
+   - 支持配置热重载和合法性验证
+
+9. **日志管理 (`log_manager.py`)**
+   - 统一的日志记录和管理系统
+   - 支持日志分级、轮转和格式化
+   - 提供系统运行状态监控指标
+
+10. **任务队列 (`task_queue.py`)**
+    - 管理文件处理任务，支持任务优先级
+    - 提供失败任务重试机制
+    - 支持批量处理和并发控制
+
+11. **健康检查 (`health_checker.py`)**
+    - 监控系统组件健康状态
+    - 检查各项服务连接状态
+    - 监控系统资源使用情况
+
+
 ## 使用方法
 1. **配置环境**  
    - 安装依赖：`pip install -r requirements.txt`  
@@ -54,3 +74,46 @@ Symlink 是一个用于监控文件变化并生成软链接的系统，支持通
 ## 参考文档
 - [Google Drive Activity API 官方文档](https://developers.google.cn/drive/activity/v2?hl=zh-cn)
 - [MoviePilot 参考实现](https://github.com/jxxghp/MoviePilot)
+
+## 部署方式
+
+### Docker 部署（推荐）
+1. **构建镜像**
+```bash
+docker build -t symlink:latest .
+```
+
+2. **运行容器**
+```bash
+docker run -d \
+  --name symlink \
+  --restart unless-stopped \
+  -v /path/to/config:/app/config \
+  -v /path/to/data:/app/data \
+  -v /path/to/rclone:/root/.config/rclone \
+  -e GOOGLE_DRIVE_FOLDER_ID=your_folder_id \
+  -e EMBY_SERVER_URL=http://your_emby_server \
+  -e EMBY_API_KEY=your_emby_api_key \
+  symlink:latest
+```
+
+3. **环境变量说明**
+- `GOOGLE_DRIVE_FOLDER_ID`: Google Drive 监控的文件夹 ID
+- `EMBY_SERVER_URL`: Emby 服务器地址
+- `EMBY_API_KEY`: Emby API 密钥
+- `API_CALL_INTERVAL`: API 调用间隔时间（可选，默认 3600 秒）
+- `POLLING_INTERVAL`: 本地目录轮询间隔时间（可选，默认 300 秒）
+
+4. **挂载卷说明**
+- `/app/config`: 配置文件目录
+- `/app/data`: 数据库和日志文件目录
+- `/root/.config/rclone`: rclone 配置文件目录
+
+5. **健康检查**
+容器内置了健康检查机制，会定期检查以下项目：
+- Google Drive API 连接状态
+- rclone 挂载点状态
+- 数据库连接状态
+- Emby 服务可用性
+
+### 手动部署

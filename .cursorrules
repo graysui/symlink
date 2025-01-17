@@ -1,3 +1,55 @@
+// symlink.cursorrules
+// 用于高性能 Google Drive 挂载和文件监控的软链接管理系统
+
+// 项目概述
+- 项目名称: symlink
+- 项目目标: 监控 Google Drive 目录变化，生成软链接，并通知 Emby 刷新媒体库
+- 支持平台: Linux (ARM, AMD)
+- 部署环境: 无桌面环境
+- 挂载方式: 使用 rclone 将 Google Drive 挂载到本地目录
+
+// 技术选型
+- 编程语言: Python 3.8+
+- 依赖库:
+  - google-api-python-client: 与 Google Drive API 交互
+  - watchdog: 本地文件监控
+  - sqlite3: 数据库管理
+  - requests: 通知 Emby
+  - Jinja2: 生成 HTML 快照
+  - streamlit: 构建图形操作界面
+- 操作系统: Linux (ARM, AMD)
+
+// 项目结构
+- 项目根目录: symlink
+  - /config: 配置文件和数据库
+    - config.yaml: 项目配置
+    - database.db: 文件目录数据库
+  - /templates: HTML 模板
+    - snap2html.jinja2: 快照生成模板
+  - /src: 源代码
+    - __init__.py: 初始化文件
+    - gdrive_api.py: Google Drive API 交互
+    - local_monitor.py: 本地文件监控
+    - symlink_manager.py: 软链接管理
+    - emby_notifier.py: Emby 通知
+    - db_manager.py: 数据库管理
+    - snapshot_generator.py: 快照生成
+    - gui.py: Streamlit 图形操作界面
+  - /scripts: 安装和启动脚本
+    - install.sh: 依赖安装脚本
+    - start.sh: 项目启动脚本
+  - .cursorrules: 项目规则文件
+  - requirements.txt: 项目依赖列表
+
+// 代码风格与最佳实践
+- 遵循 PEP 8 代码风格
+- 使用类型注解提高代码可读性
+- 使用 logger 进行日志记录，记录级别为 INFO 和 ERROR
+- 模块化代码，每个功能一个文件
+- 遵循 SOLID 原则设计代码结构
+- 使用设计模式解决常见问题（如观察者模式用于文件监控）
+
+// 功能实现与模块划分
 ### 1. Google Drive 监控 (`gdrive_api.py`)
 - **功能**：通过 **Google Drive Activity API** 监控指定文件夹的文件变化。
 - **实现方式**：
@@ -16,7 +68,6 @@
     1. **对比数据库**：将检测到的文件与数据库中的记录进行对比，找出新增或修改的文件。
     2. **更新数据库**：将新增或修改的文件信息添加到数据库中。
     3. **生成软链接**：调用 `symlink_manager.py` 生成软链接。
-    4. **通知 Emby**：调用 `emby_notifier.py` 刷新媒体库。
 - **参考文档**：[Google Drive Activity API 官方文档](https://developers.google.cn/drive/activity/v2?hl=zh-cn)
 - **补充内容**：Google Drive API 授权问题
     由于项目运行在无桌面环境的 Linux 系统上，无法通过浏览器完成 Google Drive API 的 OAuth 授权流程。以下是两种可行的解决方案：
@@ -60,7 +111,6 @@
     1. **对比数据库**：将检测到的文件与数据库中的记录进行对比，找出新增或修改的文件。
     2. **更新数据库**：将新增或修改的文件信息添加到数据库中。
     3. **生成软链接**：调用 `symlink_manager.py` 生成软链接。
-    4. **通知 Emby**：调用 `emby_notifier.py` 刷新媒体库。
 - **优化措施**：
   - **增量扫描**：只扫描最近修改时间变化的目录。
   - **缓存机制**：在内存中缓存文件列表，减少 I/O 操作。
@@ -70,7 +120,7 @@
 ### 3. 软链接管理 (`symlink_manager.py`)
 - **功能**：根据文件变化生成软链接。
 - **输入**：源文件路径和目标软链接路径。
-- **输出**：在目标路径生成软链接。
+- **输出**：在目标路径生成软链接，通知EMBY通知模块刷新媒体库
 - **参考实现**: [MoviePilot-Plugins/filesoftlink](https://github.com/thsrite/MoviePilot-Plugins/blob/main/plugins.v2/filesoftlink/__init__.py)
 
 ### 4. Emby 通知 (`emby_notifier.py`)
@@ -97,7 +147,7 @@
 - **界面设计**：
   - **主界面**：
     - 显示监控状态（Google Drive 和本地目录）。
-    - 提供操作按钮（启动/停止监控、刷新 Emby、生成软链接、生成快照）。
+    - 提供操作按钮（首次全量扫描、启动/停止监控、刷新 Emby、生成软链接、生成快照）。
     - 实时显示操作日志。
   - **配置界面**：
     - 提供表单填写 Google Drive API 密钥、Emby 服务器地址等配置。
@@ -111,6 +161,86 @@
 - **实现方式**：
   - 使用 Streamlit 的 `st.write`、`st.button`、`st.text_input` 等组件构建界面。
   - 在界面中调用后端模块（如 `gdrive_api.py`、`symlink_manager.py`）完成具体操作。
+
+### 8. 配置管理 (`config_manager.py`)
+- **功能**：统一管理所有配置项
+- **配置项**：
+  - 监控配置：
+    - Google Drive 文件夹 ID 和路径映射
+    - 本地监控目录路径
+    - API 调用间隔时间
+    - 轮询扫描间隔时间
+  - 软链接配置：
+    - 源目录和目标目录映射规则
+    - 文件类型过滤规则
+  - Emby 配置：
+    - 服务器地址
+    - API 密钥
+    - 媒体库刷新间隔
+  - 数据库配置：
+    - 数据库路径
+    - 备份策略
+    - 清理策略
+- **实现方式**：
+  - 使用 YAML 格式存储配置
+  - 支持配置热重载
+  - 配置项合法性验证
+
+### 9. 日志管理 (`log_manager.py`)
+- **功能**：统一的日志记录和管理
+- **实现方式**：
+  - 分级日志：ERROR、WARNING、INFO、DEBUG
+  - 日志轮转：按大小或时间自动轮转
+  - 日志格式化：包含时间戳、模块名、日志级别等
+  - 日志聚合：支持发送到外部日志系统
+- **监控指标**：
+  - 文件变化次数统计
+  - 软链接创建成功率
+  - 系统资源使用情况
+
+### 10. 任务队列 (`task_queue.py`)
+- **功能**：管理文件处理任务
+- **实现方式**：
+  - 使用消息队列处理文件变化事件
+  - 支持任务优先级
+  - 失败任务重试机制
+  - 任务执行状态追踪
+- **优化措施**：
+  - 批量处理相似任务
+  - 限制并发任务数
+  - 防止重复任务
+
+### 11. 健康检查 (`health_checker.py`)
+- **功能**：系统组件健康状态监控
+- **检查项目**：
+  - Google Drive API 连接状态
+  - rclone 挂载点状态
+  - 数据库连接状态
+  - Emby 服务可用性
+  - 磁盘空间使用情况
+
+
+// 错误处理与日志记录补充
+- **优雅降级**：
+  - 当 Google Drive API 不可用时，降级为本地监控
+  - 当数据库出现问题时，使用临时文件存储
+- **自动恢复**：
+  - 系统崩溃后的状态恢复
+  - 断点续传支持
+  - 数据一致性检查
+
+// 性能优化补充
+- **内存管理**：
+  - 大文件处理的内存优化
+  - 缓存过期策略
+- **批量处理**：
+  - 批量创建软链接
+  - 批量数据库操作
+- **资源限制**：
+  - CPU 使用限制
+  - 内存使用限制
+  - I/O 操作限制
+
 
 // 监控机制
 - 同时使用以下三种监控方式：
@@ -174,3 +304,4 @@
 
 // 总结
 Symlink 是一个简单易用的文件监控和软链接管理系统，适合需要在无桌面环境的 Linux 系统上运行的用户。通过遵循上述规则和最佳实践，您可以轻松理解和使用这个项目。
+
