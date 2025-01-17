@@ -12,7 +12,7 @@ import os
 import logging
 import logging.handlers
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from .config_manager import config_manager
 
@@ -53,30 +53,36 @@ class LogManager:
         }
         return level_map.get(level.upper(), logging.INFO)
     
-    def _parse_size(self, size: str) -> int:
+    def _parse_size(self, size: Union[int, str]) -> int:
         """解析文件大小
         
         Args:
-            size: 大小字符串，如 "10MB"
+            size: 大小，可以是整数（字节）或字符串（如 "10MB"）
             
         Returns:
             int: 字节数
         """
-        units = {
-            'B': 1,
-            'KB': 1024,
-            'MB': 1024 * 1024,
-            'GB': 1024 * 1024 * 1024
-        }
-        
-        size = size.upper()
-        for unit, multiplier in units.items():
-            if size.endswith(unit):
-                try:
-                    number = float(size[:-len(unit)])
-                    return int(number * multiplier)
-                except ValueError:
-                    break
+        # 如果是整数，直接返回
+        if isinstance(size, int):
+            return size
+            
+        # 如果是字符串，解析单位
+        if isinstance(size, str):
+            units = {
+                'B': 1,
+                'KB': 1024,
+                'MB': 1024 * 1024,
+                'GB': 1024 * 1024 * 1024
+            }
+            
+            size_upper = size.upper()
+            for unit, multiplier in units.items():
+                if size_upper.endswith(unit):
+                    try:
+                        number = float(size_upper[:-len(unit)])
+                        return int(number * multiplier)
+                    except ValueError:
+                        break
         
         # 默认返回 10MB
         return 10 * 1024 * 1024
