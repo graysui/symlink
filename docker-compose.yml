@@ -4,23 +4,26 @@ services:
   symlink:
     build: .
     container_name: symlink
-    restart: unless-stopped
     volumes:
+      # 配置文件
       - ./config:/app/config
+      # 数据目录
       - ./data:/app/data
-      - ${RCLONE_CONFIG:-~/.config/rclone}:/root/.config/rclone
+      # 挂载点
+      - ${MOUNT_POINT:-/media/mount}:/media/mount:shared
+      # 软链接目标目录
+      - ${TARGET_BASE:-/media/links}:/media/links
+      # 日志目录
+      - ${LOG_PATH:-/var/log/symlink}:/var/log/symlink
     environment:
-      - GOOGLE_DRIVE_FOLDER_ID=${GOOGLE_DRIVE_FOLDER_ID}
-      - EMBY_SERVER_URL=${EMBY_SERVER_URL}
-      - EMBY_API_KEY=${EMBY_API_KEY}
-      - API_CALL_INTERVAL=${API_CALL_INTERVAL:-3600}
-      - POLLING_INTERVAL=${POLLING_INTERVAL:-300}
-    devices:
-      - /dev/fuse:/dev/fuse
-    cap_add:
-      - SYS_ADMIN
-    security_opt:
-      - apparmor:unconfined
+      - MOUNT_POINT=/media/mount
+      - TARGET_BASE=/media/links
+      - LOG_PATH=/var/log/symlink
+      - DATABASE_PATH=/app/data/database.db
+    ports:
+      - "8501:8501"  # Streamlit Web UI
+    restart: unless-stopped
+    privileged: true  # 需要特权模式以支持软链接操作
     networks:
       - symlink_net
 
