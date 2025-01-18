@@ -304,6 +304,17 @@ async def get_system_info():
         "database_status": health_checker.check_database()
     }
 
+@app.get("/symlink/recent")
+async def get_recent_symlinks(limit: int = 50):
+    """获取最近处理的软链接记录"""
+    if not symlink_manager:
+        raise HTTPException(status_code=500, detail="软链接管理器未初始化")
+    try:
+        recent_files = symlink_manager.get_recent_files(limit)
+        return {"files": recent_files}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取最近记录失败: {str(e)}")
+
 def signal_handler(signum, frame):
     """处理系统信号"""
     logger.info(f"接收到信号: {signum}")

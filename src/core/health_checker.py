@@ -46,6 +46,7 @@ class HealthChecker:
         
         # 初始化检查线程
         self.check_thread = Thread(target=self._check_loop)
+        self.check_thread.daemon = True
     
     def start(self):
         """启动健康检查"""
@@ -289,4 +290,105 @@ class HealthChecker:
             return {
                 'status': False,
                 'message': f'检查系统资源失败: {e}'
+            }
+    
+    def check_cpu_usage(self) -> Dict:
+        """检查 CPU 使用情况"""
+        try:
+            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_count = psutil.cpu_count()
+            load_avg = psutil.getloadavg()
+            
+            status = cpu_percent <= self.cpu_threshold
+            
+            return {
+                'status': status,
+                'percentage': cpu_percent,
+                'cores': cpu_count,
+                'load_avg': load_avg,
+                'threshold': self.cpu_threshold,
+                'message': f'CPU 使用率: {cpu_percent}%'
+            }
+        except Exception as e:
+            return {
+                'status': False,
+                'error': str(e),
+                'message': f'检查 CPU 使用率失败: {e}'
+            }
+    
+    def check_memory_usage(self) -> Dict:
+        """检查内存使用情况"""
+        try:
+            memory = psutil.virtual_memory()
+            status = memory.percent <= self.memory_threshold
+            
+            return {
+                'status': status,
+                'percentage': memory.percent,
+                'total': memory.total / (1024 * 1024 * 1024),  # 转换为 GB
+                'used': memory.used / (1024 * 1024 * 1024),
+                'free': memory.free / (1024 * 1024 * 1024),
+                'threshold': self.memory_threshold,
+                'message': f'内存使用率: {memory.percent}%'
+            }
+        except Exception as e:
+            return {
+                'status': False,
+                'error': str(e),
+                'message': f'检查内存使用率失败: {e}'
+            }
+    
+    def check_disk_usage(self) -> Dict:
+        """检查磁盘使用情况"""
+        try:
+            disk = psutil.disk_usage(self.mount_point)
+            status = disk.percent <= self.disk_threshold
+            
+            return {
+                'status': status,
+                'percentage': disk.percent,
+                'total': disk.total / (1024 * 1024 * 1024),  # 转换为 GB
+                'used': disk.used / (1024 * 1024 * 1024),
+                'free': disk.free / (1024 * 1024 * 1024),
+                'threshold': self.disk_threshold,
+                'message': f'磁盘使用率: {disk.percent}%'
+            }
+        except Exception as e:
+            return {
+                'status': False,
+                'error': str(e),
+                'message': f'检查磁盘使用率失败: {e}'
+            }
+    
+    def check_mount_point(self) -> Dict:
+        """检查挂载点状态"""
+        try:
+            if not os.path.exists(self.mount_point):
+                return {
+                    'status': False,
+                    'message': f'挂载点不存在: {self.mount_point}'
+                }
+            
+            # 检查挂载点是否可写
+            test_file = os.path.join(self.mount_point, '.health_check')
+            try:
+                with open(test_file, 'w') as f:
+                    f.write('test')
+                os.remove(test_file)
+            except Exception as e:
+                return {
+                    'status': False,
+                    'message': f'挂载点不可写: {e}'
+                }
+            
+            return {
+                'status': True,
+                'message': '挂载点状态正常',
+                'path': self.mount_point
+            }
+        except Exception as e:
+            return {
+                'status': False,
+                'error': str(e),
+                'message': f'检查挂载点失败: {e}'
             } 
